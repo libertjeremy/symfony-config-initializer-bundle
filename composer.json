@@ -1,0 +1,19 @@
+{
+    "name": "libertjeremy/symfony-config-initializer-bundle",
+    "type": "symfony-bundle",
+    "authors": [
+        {
+            "name": "libertjeremy",
+            "email": "contact@libertjeremy.fr"
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "libertjeremy/symfony-config-helpers": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "LibertJeremy\\Symfony\\ConfigInitializerBundle\\": "src/"
+        }
+    }
+}
