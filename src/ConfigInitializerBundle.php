@@ -6,8 +6,6 @@ namespace LibertJeremy\Symfony\ConfigInitializerBundle;
 
 use LibertJeremy\Symfony\ConfigHelpers\Bundle\AbstractBundle;
 use LibertJeremy\Symfony\ConfigInitializerBundle\Constants\Doctrine;
-use LuxApps\CoreBundle\Doctrine\Types\DatePeriodType;
-use LuxApps\CoreBundle\Doctrine\Types\StringifiedDateType;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
