@@ -120,7 +120,6 @@ final class ConfigInitializerBundle extends AbstractBundle
                 'validate_xml_mapping' => true,
             ],
             'dbal' => [
-                'dbname_suffix' => '_test',
                 'use_savepoints' => true,
             ],
         ];
@@ -141,6 +140,7 @@ final class ConfigInitializerBundle extends AbstractBundle
                     'driver' => 'pdo_mysql',
                     'url' => $connection[self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_URL],
                     'server_version' => $connection[self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_SERVER_VERSION],
+                    'dbname_suffix' => '_test',
                 ];
             }
 
