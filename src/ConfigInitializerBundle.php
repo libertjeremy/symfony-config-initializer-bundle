@@ -38,6 +38,21 @@ final class ConfigInitializerBundle extends AbstractBundle
             ->booleanNode(self::CONFIGURATION_NODE_ENABLE_SESSION)->defaultFalse()->end()
             ->booleanNode(self::CONFIGURATION_NODE_ENABLE_VALIDATION)->defaultFalse()->end()
             ->arrayNode(self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTIONS)
+                ->validate()
+                    ->always(function ($connections) {
+                        if (is_array($connections) && count($connections) > 1) {
+                            foreach (array_slice($connections, 1) as $index => $connection) {
+                                $actualIndex = $index + 1; // Since we sliced from index 1
+                                if (empty($connection[self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_NAME] ?? null)) {
+                                    throw new \InvalidArgumentException(
+                                        sprintf('The connection name is required for the connection at index %d (second and subsequent connections must have a name).', $actualIndex)
+                                    );
+                                }
+                            }
+                        }
+                        return $connections;
+                    })
+                ->end()
                 ->arrayPrototype()
                     ->children()
                         ->scalarNode(self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_NAME)->end()
