@@ -16,6 +16,7 @@ final class ConfigInitializerBundle extends AbstractBundle
     public const string CONFIGURATION_NODE_ENABLE_PROFILER = 'enable_profiler';
     public const string CONFIGURATION_NODE_ENABLE_ROUTER = 'enable_router';
     public const string CONFIGURATION_NODE_ENABLE_SECURITY = 'enable_security';
+    public const string CONFIGURATION_NODE_ENABLE_SESSION = 'enable_session';
     public const string CONFIGURATION_NODE_ENABLE_VALIDATION = 'enable_validation';
 
     public function configure(DefinitionConfigurator $definition): void
@@ -27,6 +28,7 @@ final class ConfigInitializerBundle extends AbstractBundle
             ->booleanNode(self::CONFIGURATION_NODE_ENABLE_PROFILER)->defaultFalse()->end()
             ->booleanNode(self::CONFIGURATION_NODE_ENABLE_ROUTER)->defaultFalse()->end()
             ->booleanNode(self::CONFIGURATION_NODE_ENABLE_SECURITY)->defaultFalse()->end()
+            ->booleanNode(self::CONFIGURATION_NODE_ENABLE_SESSION)->defaultFalse()->end()
             ->booleanNode(self::CONFIGURATION_NODE_ENABLE_VALIDATION)->defaultFalse()->end()
             ->end();
     }
@@ -54,6 +56,10 @@ final class ConfigInitializerBundle extends AbstractBundle
 
         if (true === $config[self::CONFIGURATION_NODE_ENABLE_SECURITY]) {
             $this->prependSecurity($builder, $env);
+        }
+
+        if (true === $config[self::CONFIGURATION_NODE_ENABLE_SESSION]) {
+            $this->prependFrameworkSession($builder, $env);
         }
 
         if (true === $config[self::CONFIGURATION_NODE_ENABLE_VALIDATION]) {
@@ -141,6 +147,36 @@ final class ConfigInitializerBundle extends AbstractBundle
         }
     }
 
+    private function prependFrameworkSession(ContainerBuilder $builder, string $env): void
+    {
+        $frameworkConfiguration = [
+            'session' => [
+                'cookie_secure' => 'auto',
+                'cookie_samesite' => 'lax',
+                'cookie_lifetime' => 2592000,
+                'gc_maxlifetime' => 2592000,
+                'name' => substr(($this->retrieveProjectReference($builder)), 0, 6),
+                'handler_id' => null,
+            ],
+        ];
+
+        if ('test' === $env) {
+            $frameworkConfiguration = array_merge_recursive($frameworkConfiguration, [
+                'session' => [
+                    'storage_factory_id' => 'session.storage.factory.mock_file',
+                ],
+            ]);
+        } else {
+            $frameworkConfiguration = array_merge_recursive($frameworkConfiguration, [
+                'session' => [
+                    'storage_factory_id' => 'session.storage.factory.native',
+                ],
+            ]);
+        }
+
+        $builder->prependExtensionConfig('framework', $frameworkConfiguration);
+    }
+
     private function prependFrameworkValidation(ContainerBuilder $builder, string $env): void
     {
         if ('dev' === $env || 'test' === $env) {
@@ -150,5 +186,10 @@ final class ConfigInitializerBundle extends AbstractBundle
                 ],
             ]);
         }
+    }
+
+    private function retrieveProjectReference(ContainerBuilder $builder): string
+    {
+        return md5($builder->getParameter('kernel.project_dir').'_'.$builder->getParameter('kernel.environment')).'_'.$builder->getParameter('kernel.secret');
     }
 }
