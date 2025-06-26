@@ -38,6 +38,8 @@ final class ConfigInitializerBundle extends AbstractBundle
 
         $env = $builder->getParameter('kernel.environment');
 
+        $this->prependFramework($builder, $env);
+
         if (true === $config[self::CONFIGURATION_NODE_ENABLE_DEBUG]) {
             $this->prependDebug($builder, $env);
         }
@@ -56,6 +58,15 @@ final class ConfigInitializerBundle extends AbstractBundle
 
         if (true === $config[self::CONFIGURATION_NODE_ENABLE_VALIDATION]) {
             $this->prependFrameworkValidation($builder, $env);
+        }
+    }
+
+    private function prependFramework(ContainerBuilder $builder, string $env): void
+    {
+        if ('test' === $env) {
+            $builder->prependExtensionConfig('framework', [
+                'test' => true,
+            ]);
         }
     }
 
