@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace LibertJeremy\Symfony\ConfigInitializerBundle;
 
 use LibertJeremy\Symfony\ConfigHelpers\Bundle\AbstractBundle;
+use LibertJeremy\Symfony\ConfigInitializerBundle\Constants\Doctrine;
+use LuxApps\CoreBundle\Doctrine\Types\DatePeriodType;
+use LuxApps\CoreBundle\Doctrine\Types\StringifiedDateType;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -13,11 +16,16 @@ use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 final class ConfigInitializerBundle extends AbstractBundle
 {
     public const string CONFIGURATION_NODE_ENABLE_DEBUG = 'enable_debug';
+    public const string CONFIGURATION_NODE_ENABLE_DOCTRINE = 'enable_doctrine';
     public const string CONFIGURATION_NODE_ENABLE_PROFILER = 'enable_profiler';
     public const string CONFIGURATION_NODE_ENABLE_ROUTER = 'enable_router';
     public const string CONFIGURATION_NODE_ENABLE_SECURITY = 'enable_security';
     public const string CONFIGURATION_NODE_ENABLE_SESSION = 'enable_session';
     public const string CONFIGURATION_NODE_ENABLE_VALIDATION = 'enable_validation';
+    public const string CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTIONS = 'database_connections';
+    public const string CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_NAME = 'name';
+    public const string CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_URL = 'url';
+    public const string CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_SERVER_VERSION = 'server_version';
 
     public function configure(DefinitionConfigurator $definition): void
     {
@@ -25,11 +33,21 @@ final class ConfigInitializerBundle extends AbstractBundle
             ->rootNode()
             ->children()
             ->booleanNode(self::CONFIGURATION_NODE_ENABLE_DEBUG)->defaultFalse()->end()
+            ->booleanNode(self::CONFIGURATION_NODE_ENABLE_DOCTRINE)->defaultFalse()->end()
             ->booleanNode(self::CONFIGURATION_NODE_ENABLE_PROFILER)->defaultFalse()->end()
             ->booleanNode(self::CONFIGURATION_NODE_ENABLE_ROUTER)->defaultFalse()->end()
             ->booleanNode(self::CONFIGURATION_NODE_ENABLE_SECURITY)->defaultFalse()->end()
             ->booleanNode(self::CONFIGURATION_NODE_ENABLE_SESSION)->defaultFalse()->end()
             ->booleanNode(self::CONFIGURATION_NODE_ENABLE_VALIDATION)->defaultFalse()->end()
+            ->arrayNode(self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTIONS)
+                ->arrayPrototype()
+                    ->children()
+                        ->scalarNode(self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_NAME)->end()
+                        ->scalarNode(self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_URL)->isRequired()->cannotBeEmpty()->end()
+                        ->scalarNode(self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_SERVER_VERSION)->end()
+                    ->end()
+                ->end()
+            ->end()
             ->end();
     }
 
@@ -44,6 +62,10 @@ final class ConfigInitializerBundle extends AbstractBundle
 
         if (true === $config[self::CONFIGURATION_NODE_ENABLE_DEBUG]) {
             $this->prependDebug($builder, $env);
+        }
+
+        if (true === $config[self::CONFIGURATION_NODE_ENABLE_DOCTRINE]) {
+            $this->prependDoctrine($builder, $env, $config[self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTIONS] ?? []);
         }
 
         if (true === $config[self::CONFIGURATION_NODE_ENABLE_PROFILER]) {
@@ -83,6 +105,75 @@ final class ConfigInitializerBundle extends AbstractBundle
                 //'dump_destination' => 'tcp://%env(VAR_DUMPER_SERVER)%',
             ]);
         }
+    }
+
+    private function prependDoctrine(ContainerBuilder $builder, string $env, array $databaseConnections = []): void
+    {
+        $doctrineConfiguration = [
+            'orm' => [
+                'auto_generate_proxy_classes' => $builder->getParameter('kernel.debug'),
+                'auto_mapping' => true,
+                'default_entity_manager' => Doctrine::DEFAULT_CONNECTION_NAME,
+                'enable_lazy_ghost_objects' => true,
+                'naming_strategy' => 'doctrine.orm.naming_strategy.underscore_number_aware',
+                'report_fields_where_declared' => true,
+                'validate_xml_mapping' => true,
+            ],
+            'dbal' => [
+                'dbname_suffix' => '_test',
+                'use_savepoints' => true,
+            ],
+        ];
+
+        $connections = [];
+        $connectionNames = [];
+
+        if (!empty($databaseConnections)) {
+            foreach ($databaseConnections as $connection) {
+                if (empty($name = $connection[self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_NAME])) {
+                    $name = Doctrine::DEFAULT_CONNECTION_NAME;
+                }
+
+                $connectionNames[] = $name;
+
+                $connections[$name] = [
+                    'charset' => 'utf8mb4',
+                    'driver' => 'pdo_mysql',
+                    'url' => $connection[self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_URL],
+                    'server_version' => $connection[self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_SERVER_VERSION],
+                ];
+            }
+
+            $doctrineConfiguration = [
+                'dbal' => [
+                    'default_connection' => $connectionNames[0],
+                    'connections' => $connections,
+                ],
+            ];
+        }
+
+        if (
+            'test' === $env
+            || 'prod' === $env
+        ) {
+            $connectionSettings = [];
+
+            foreach ($connectionNames as $connectionName) {
+                $connectionSettings[$connectionName] = [
+                    'logging' => false,
+                    'profiling' => false,
+                    'profiling_collect_backtrace' => false,
+                ];
+            }
+
+            $doctrineConfiguration = array_merge_recursive($doctrineConfiguration, [
+                'dbal' => [
+                    'connections' => $connectionSettings,
+                ],
+            ]);
+        }
+
+        $builder->prependExtensionConfig('doctrine', $doctrineConfiguration);
     }
 
     private function prependFrameworkProfiler(ContainerBuilder $builder, string $env): void
