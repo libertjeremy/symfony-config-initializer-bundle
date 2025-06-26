@@ -140,7 +140,6 @@ final class ConfigInitializerBundle extends AbstractBundle
                     'driver' => 'pdo_mysql',
                     'url' => $connection[self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_URL],
                     'server_version' => $connection[self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_SERVER_VERSION],
-                    'dbname_suffix' => '_test',
                 ];
             }
 
@@ -159,11 +158,17 @@ final class ConfigInitializerBundle extends AbstractBundle
             $connectionSettings = [];
 
             foreach ($connectionNames as $connectionName) {
-                $connectionSettings[$connectionName] = [
+                $connectedSettingsForConnectionName = [
                     'logging' => false,
                     'profiling' => false,
                     'profiling_collect_backtrace' => false,
                 ];
+
+                if ('test' === $env) {
+                    $connectedSettingsForConnectionName['dbname_suffix'] = '_test';
+                }
+
+                $connectionSettings[$connectionName] = $connectedSettingsForConnectionName;
             }
 
             $doctrineConfiguration = array_merge_recursive($doctrineConfiguration, [
