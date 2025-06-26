@@ -49,6 +49,17 @@ final class ConfigInitializerBundle extends AbstractBundle
             ->end();
     }
 
+    public function prependExtension(ContainerConfigurator $container, ContainerBuilder $builder): void
+    {
+        $config = $this->retrieveConfiguration($builder);
+
+        $env = $builder->getParameter('kernel.environment');
+
+        if (true === ($config[self::CONFIGURATION_NODE_ENABLE_DOCTRINE] ?? false)) {
+            $this->prependDoctrine($builder, $env, $config[self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTIONS] ?? []);
+        }
+    }
+
     #[\Override]
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
@@ -60,10 +71,6 @@ final class ConfigInitializerBundle extends AbstractBundle
 
         if (true === $config[self::CONFIGURATION_NODE_ENABLE_DEBUG]) {
             $this->prependDebug($builder, $env);
-        }
-
-        if (true === $config[self::CONFIGURATION_NODE_ENABLE_DOCTRINE]) {
-            $this->prependDoctrine($builder, $env, $config[self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTIONS] ?? []);
         }
 
         if (true === $config[self::CONFIGURATION_NODE_ENABLE_PROFILER]) {
@@ -127,7 +134,7 @@ final class ConfigInitializerBundle extends AbstractBundle
 
         if (!empty($databaseConnections)) {
             foreach ($databaseConnections as $connection) {
-                if (empty($name = $connection[self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_NAME])) {
+                if (empty($name = $connection[self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_NAME] ?? null)) {
                     $name = Doctrine::DEFAULT_CONNECTION_NAME;
                 }
 
