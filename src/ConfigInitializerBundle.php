@@ -333,6 +333,6 @@ final class ConfigInitializerBundle extends AbstractBundle
 
     private function retrieveProjectReference(ContainerBuilder $builder): string
     {
-        return md5($builder->getParameter('kernel.project_dir').'_'.$builder->getParameter('kernel.environment')).'_'.$builder->getParameter('kernel.secret');
+        return md5($builder->getParameter('kernel.project_dir').'_'.$builder->getParameter('kernel.environment'));
     }
 }
