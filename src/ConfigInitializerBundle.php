@@ -117,11 +117,17 @@ final class ConfigInitializerBundle extends AbstractBundle
 
     private function prependFramework(ContainerBuilder $builder, string $env): void
     {
+        $frameworkConfiguration = [
+            'default_locale' => \Locale::getDefault(),
+        ];
+
         if ('test' === $env) {
-            $builder->prependExtensionConfig('framework', [
+            $frameworkConfiguration = array_merge_recursive($frameworkConfiguration, [
                 'test' => true,
             ]);
         }
+
+        $builder->prependExtensionConfig('framework', $frameworkConfiguration);
     }
 
     private function prependDebug(ContainerBuilder $builder, string $env): void
