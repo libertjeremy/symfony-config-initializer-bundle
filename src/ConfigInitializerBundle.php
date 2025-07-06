@@ -19,6 +19,7 @@ final class ConfigInitializerBundle extends AbstractBundle
     public const string CONFIGURATION_NODE_ENABLE_ROUTER = 'enable_router';
     public const string CONFIGURATION_NODE_ENABLE_SECURITY = 'enable_security';
     public const string CONFIGURATION_NODE_ENABLE_SESSION = 'enable_session';
+    public const string CONFIGURATION_NODE_ENABLE_TWIG = 'enable_twig';
     public const string CONFIGURATION_NODE_ENABLE_VALIDATION = 'enable_validation';
     public const string CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTIONS = 'database_connections';
     public const string CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_NAME = 'name';
@@ -36,6 +37,7 @@ final class ConfigInitializerBundle extends AbstractBundle
             ->booleanNode(self::CONFIGURATION_NODE_ENABLE_ROUTER)->defaultFalse()->end()
             ->booleanNode(self::CONFIGURATION_NODE_ENABLE_SECURITY)->defaultFalse()->end()
             ->booleanNode(self::CONFIGURATION_NODE_ENABLE_SESSION)->defaultFalse()->end()
+            ->booleanNode(self::CONFIGURATION_NODE_ENABLE_TWIG)->defaultFalse()->end()
             ->booleanNode(self::CONFIGURATION_NODE_ENABLE_VALIDATION)->defaultFalse()->end()
             ->arrayNode(self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTIONS)
                 ->validate()
@@ -102,6 +104,10 @@ final class ConfigInitializerBundle extends AbstractBundle
 
         if (true === $config[self::CONFIGURATION_NODE_ENABLE_SESSION]) {
             $this->prependFrameworkSession($builder, $env);
+        }
+
+        if (true === $config[self::CONFIGURATION_NODE_ENABLE_TWIG]) {
+            $this->prependTwig($builder, $env);
         }
 
         if (true === $config[self::CONFIGURATION_NODE_ENABLE_VALIDATION]) {
@@ -291,6 +297,21 @@ final class ConfigInitializerBundle extends AbstractBundle
         }
 
         $builder->prependExtensionConfig('framework', $frameworkConfiguration);
+    }
+
+    private function prependTwig(ContainerBuilder $builder, string $env): void
+    {
+        $twigConfiguration = [
+            'file_name_pattern' => '*.twig',
+        ];
+
+        if ('test' === $env) {
+            $twigConfiguration = array_merge_recursive($twigConfiguration, [
+                'strict_variables' => true,
+            ]);
+        }
+
+        $builder->prependExtensionConfig('twig', $twigConfiguration);
     }
 
     private function prependFrameworkValidation(ContainerBuilder $builder, string $env): void
