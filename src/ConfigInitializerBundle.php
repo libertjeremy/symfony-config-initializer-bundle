@@ -79,6 +79,10 @@ final class ConfigInitializerBundle extends AbstractBundle
         if (true === ($config[self::CONFIGURATION_NODE_ENABLE_SESSION] ?? false)) {
             $this->prependFrameworkSession($builder, $env);
         }
+
+        if (true === $config[self::CONFIGURATION_NODE_ENABLE_SECURITY]) {
+            $this->prependSecurity($builder, $env);
+        }
     }
 
     #[\Override]
@@ -100,10 +104,6 @@ final class ConfigInitializerBundle extends AbstractBundle
 
         if (true === $config[self::CONFIGURATION_NODE_ENABLE_ROUTER]) {
             $this->prependFrameworkRouter($builder, $env);
-        }
-
-        if (true === $config[self::CONFIGURATION_NODE_ENABLE_SECURITY]) {
-            $this->prependSecurity($builder, $env);
         }
 
         if (true === $config[self::CONFIGURATION_NODE_ENABLE_TWIG]) {
