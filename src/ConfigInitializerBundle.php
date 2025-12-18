@@ -59,7 +59,7 @@ final class ConfigInitializerBundle extends AbstractBundle
                     ->children()
                         ->scalarNode(self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_NAME)->end()
                         ->scalarNode(self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_URL)->isRequired()->cannotBeEmpty()->end()
-                        ->scalarNode(self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_SERVER_VERSION)->end()
+                        ->scalarNode(self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_SERVER_VERSION)->defaultNull()->end()
                     ->end()
                 ->end()
             ->end()
@@ -167,12 +167,17 @@ final class ConfigInitializerBundle extends AbstractBundle
 
                 $connectionNames[] = $name;
 
-                $connections[$name] = [
+                $connectionConfig = [
                     'charset' => 'utf8mb4',
                     'driver' => 'pdo_mysql',
                     'url' => $connection[self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_URL],
-                    'server_version' => $connection[self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_SERVER_VERSION],
                 ];
+
+                if (!empty($databaseServerVersion = $connection[self::CONFIGURATION_NODE_DOCTRINE_DATABASE_CONNECTION_SERVER_VERSION] ?? null)) {
+                    $connectionConfig['server_version'] = $databaseServerVersion;
+                }
+
+                $connections[$name] = $connectionConfig;
             }
 
             $doctrineConfiguration = [
